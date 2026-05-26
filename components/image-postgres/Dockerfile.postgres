@@ -1,12 +1,13 @@
 # Copyright 2017 - 2026 Crunchy Data Solutions, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
-
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+ARG DOCKER_REGISTRY="localhost"
+ARG RHEL9_BASE="${DOCKER_REGISTRY}/rockylinux:9-minimal"
+FROM ${RHEL9_BASE}
 
 ARG PATRONI_VERSION=4.0.6
 ARG PGBACKREST_VERSION=2.58.0
-ARG POSTGRES_VERSION=18
+ARG POSTGRES_VERSION=18.3
 
 # Trim any patch version from the provided POSTGRES_VERSION
 ENV POSTGRES_MAJOR_VERSION="${POSTGRES_VERSION%%.*}"
@@ -24,7 +25,9 @@ PGAUDIT_PKG="$(case "$POSTGRES_MAJOR_VERSION" in \
     esac)";
 
 # Enable the PostgreSQL Global Development Group (PGDG) repository
-rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm"
+source /etc/os-release && \
+rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-$REDHAT_SUPPORT_PRODUCT_VERSION-$(arch)/pgdg-redhat-repo-EL-$REDHAT_SUPPORT_PRODUCT_VERSION-latest.noarch.rpm" ||\
+rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-$REDHAT_SUPPORT_PRODUCT_VERSION-$(arch)/pgdg-redhat-repo-latest.noarch.rpm"
 
 # EPEL repo is required for the pgbackrest package
 rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
@@ -38,11 +41,11 @@ microdnf reinstall -y --nodocs 'tzdata'
 
 # Install PostgreSQL and related packages
 microdnf install -y --nodocs --setopt install_weak_deps=0 \
-    "postgresql${POSTGRES_MAJOR_VERSION}" \
-    "postgresql${POSTGRES_MAJOR_VERSION}-contrib" \
-    "postgresql${POSTGRES_MAJOR_VERSION}-server" \
-    "postgresql${POSTGRES_MAJOR_VERSION}-llvmjit" \
-    "postgresql${POSTGRES_MAJOR_VERSION}-plpython*"
+    "postgresql${POSTGRES_MAJOR_VERSION}-${POSTGRES_VERSION}" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-contrib-${POSTGRES_VERSION}" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-server-${POSTGRES_VERSION}" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-llvmjit-${POSTGRES_VERSION}" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-plpython*-${POSTGRES_VERSION}"
 
 # Install Postgres extensions
 microdnf install -y --nodocs --setopt install_weak_deps=0 \
@@ -87,7 +90,7 @@ microdnf install -y --nodocs --setopt install_weak_deps=0 \
 PYTHON_STREAM=3 && microdnf install -y --nodocs --setopt install_weak_deps=0 \
     "python${PYTHON_STREAM}-pip" \
     "python${PYTHON_STREAM}-psutil" \
-    "python${PYTHON_STREAM}-psycopg2" 
+    "python${PYTHON_STREAM}-psycopg2"
 
 # Clean up package manager cache to reduce image size
 microdnf clean all
@@ -101,7 +104,7 @@ python3 -m pip install --no-cache-dir \
     $(if printf '%s\n3.3.0' "${PATRONI_VERSION}" | sort -uVC; then echo 'ydiff<1.3'; fi)
 
 SHELL
-    
+
 ENV LANG='en_US.utf-8' LC_ALL='en_US.utf-8' PAGER='less'
 ENV PATH="/usr/pgsql-${POSTGRES_MAJOR_VERSION}/bin:/usr/pgaudit_analyze/bin:${PATH}"
 

@@ -4,7 +4,10 @@
 
 # Rather than build the binary, retrieve the already-built binary from
 # the OpenTelemetry image
-FROM otel/opentelemetry-collector-contrib:0.147.0 AS collector
+ARG DOCKER_REGISTRY="localhost"
+ARG RHEL9_BASE="${DOCKER_REGISTRY}/rockylinux:9-minimal"
+ARG COLLECTOR_VERSION=0.147.0
+FROM otel/opentelemetry-collector-contrib:${COLLECTOR_VERSION} AS collector
 
 # Aggregate the collector licenses from binary
 # and from root of the PGO repo
@@ -15,7 +18,7 @@ USER 0
 
 COPY --from=collector --chmod=0777 /otelcol-contrib /otelcol-contrib
 COPY hack/extract-licenses.go .
-RUN go run ./extract-licenses.go /licenses /otelcol-contrib 
+RUN go run ./extract-licenses.go /licenses /otelcol-contrib
 COPY licenses/LICENSE.txt /licenses/LICENSE.txt
 
 # Make sure all licenses are readable by owner:group:other
@@ -29,7 +32,7 @@ SHELL
 
 # Assemble the complete image with required packages for OpenTelemetry
 # and related activity (e.g., log retention, process restarting)
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM ${RHEL9_BASE}
 
 COPY --from=build --chmod=0777 /otelcol-contrib /otelcol-contrib
 COPY --from=build /licenses /licenses

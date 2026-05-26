@@ -1,7 +1,8 @@
 # Copyright 2017 - 2026 Crunchy Data Solutions, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
-
+ARG DOCKER_REGISTRY="localhost"
+ARG RHEL9_BASE="${DOCKER_REGISTRY}/rockylinux:9-minimal"
 ARG BASE_VERSION=ubi9
 ARG PGADMIN4_VERSION=9.13
 ARG PYTHON_VERSION=3.11
@@ -10,7 +11,7 @@ ARG PG_MAJOR=18
 # Some Python packages available in UBI repositories are too old for pgAdmin
 # so we must compile them. Do that in stages to keep build tooling out of
 # the final image.
-FROM registry.access.redhat.com/ubi9/ubi-minimal AS build-tools
+FROM ${RHEL9_BASE} AS build-tools
 
 ARG PYTHON_VERSION
 ENV PIP_ROOT_USER_ACTION=ignore
@@ -20,7 +21,6 @@ microdnf install -y --nodocs --setopt install_weak_deps=0 \
 'gcc' \
 'krb5-devel' \
 "python${PYTHON_VERSION}-devel" \
-"python${PYTHON_VERSION}-packaging" \
 "python${PYTHON_VERSION}-pip" \
 'tar' \
 && microdnf clean all
@@ -79,7 +79,7 @@ RUN \
 #   https://developers.cloudflare.com/cache/concepts/default-cache-behavior/#upload-limits
 #
 # Start by copying files from prior stages.
-FROM ubi-minimal
+FROM ${RHEL9_BASE}
 
 # These include pgAdmin itself; ~180 MiB
 COPY --from=build1 /mnt/usr/local /usr/local
@@ -96,7 +96,9 @@ ARG PYTHON_VERSION
 ARG BASE_VERSION
 
 RUN rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${BASE_VERSION##ubi}.noarch.rpm" \
-&& rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-${BASE_VERSION##ubi}-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" \
+&& source /etc/os-release && \
+ rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-$REDHAT_SUPPORT_PRODUCT_VERSION-$(arch)/pgdg-redhat-repo-EL-$REDHAT_SUPPORT_PRODUCT_VERSION-latest.noarch.rpm" ||\
+ rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-$REDHAT_SUPPORT_PRODUCT_VERSION-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" \
 && microdnf install -y --nodocs --setopt install_weak_deps=0 \
 --enablerepo='epel' \
 'krb5-libs' \

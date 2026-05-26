@@ -1,13 +1,15 @@
 # Copyright 2025 - 2026 Crunchy Data Solutions, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
-
+ARG DOCKER_REGISTRY="localhost"
+ARG RHEL9_BASE="${DOCKER_REGISTRY}/rockylinux:9-minimal"
 FROM registry.access.redhat.com/ubi9/go-toolset AS build
 
 # NOTE: The TARGETARCH and TARGETOS arguments are populated automatically by Buildah and Docker.
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG TARGETARCH
 ARG TARGETOS
+ARG EXPORTER_VERSION=0.18.1
 
 # Run as user 0 to allow later chmod'ing
 USER 0
@@ -25,9 +27,9 @@ RUN \
 <<-SHELL
 set -e
 
-wget https://github.com/prometheus-community/postgres_exporter/releases/download/v0.18.1/postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}.tar.gz
-tar -xzf postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}.tar.gz
-go run ./extract-licenses.go ./licenses postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}/postgres_exporter
+wget https://github.com/prometheus-community/postgres_exporter/releases/download/v${EXPORTER_VERSION}/postgres_exporter-${EXPORTER_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz
+tar -xzf postgres_exporter-${EXPORTER_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz
+go run ./extract-licenses.go ./licenses postgres_exporter-${EXPORTER_VERSION}.${TARGETOS}-${TARGETARCH}/postgres_exporter
 SHELL
 
 COPY licenses/LICENSE.txt licenses/LICENSE.txt
@@ -37,7 +39,7 @@ RUN \
 <<-SHELL
 set -e
 
-mv ./postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}/LICENSE ./licenses
+mv ./postgres_exporter-${EXPORTER_VERSION}.${TARGETOS}-${TARGETARCH}/LICENSE ./licenses
 find ./licenses '(' -type d -exec chmod 0555 '{}' + ')'
 find ./licenses '(' -type f -exec chmod 0444 '{}' + ')'
 SHELL
@@ -45,7 +47,7 @@ SHELL
 # Assemble PGO-usable exporter image with licenses.
 # License permissions have been set in build, but ensure
 # that exporter binary is executable by owner:group:other.
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM ${RHEL9_BASE}
 
 COPY --from=build --chmod=0555 \
     /opt/app-root/src/postgres_exporter-*/postgres_exporter \
