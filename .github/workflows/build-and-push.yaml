@@ -23,7 +23,7 @@ jobs:
       - name: Checkout pgmonitor
         uses: actions/checkout@v6
         with:
-          repository: acdh-oeaw/pgmonitor
+          repository: simar0at/pgmonitor
           path: pgmonitor
           fetch-depth: 30
           fetch-tags: true

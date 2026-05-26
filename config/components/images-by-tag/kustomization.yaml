@@ -1,59 +1,59 @@
 kind: Component
 images:
 - name: image-pgadmin
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-pgadmin4
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-pgadmin4
   newTag: 9.13-main
 - name: image-pgbackrest
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-pgbackrest
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-pgbackrest
   newTag: 2.58.0-main
 - name: image-pgbouncer
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-pgbouncer
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-pgbouncer
   newTag: 1.25.2-main
 - name: image-postgres-exporter
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-exporter
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-exporter
   newTag: 0.18.1-main
 - name: image-postgres-operator-6.0
-  newName: ghcr.io/acdh-oeaw/postgres-operator/pgo
+  newName: ghcr.io/simar0at/postgres-operator/pgo
   newTag: main
 - name: image-postgres-operator-5.8
-  newName: ghcr.io/acdh-oeaw/postgres-operator/postgres-operator
+  newName: ghcr.io/simar0at/postgres-operator/postgres-operator
   newTag: does-not-exist
 - name: image-crunchy-postgres-15
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres
   newTag: does-not-exist
 - name: image-crunchy-postgres-16
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres
   newTag: 16.11-main
 - name: image-crunchy-postgres-17
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres
   newTag: does-not-exist
 - name: image-crunchy-postgres-18
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres
   newTag: 18.3-main
 - name: image-crunchy-upgrade
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-upgrade
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-upgrade
   newTag: 18.3-main
 - name: image-crunchy-postgres-15-gis-3.3
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-15-gis-3.4
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-16-gis-3.3
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-16-gis-3.4
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-17-gis-3.4
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-17-gis-3.5
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-17-gis-3.6
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: does-not-exist
 - name: image-crunchy-postgres-18-gis-3.6
-  newName: ghcr.io/acdh-oeaw/postgres-operator/crunchy-postgres-gis
+  newName: ghcr.io/simar0at/postgres-operator/crunchy-postgres-gis
   newTag: 18.3-3.6.0-main

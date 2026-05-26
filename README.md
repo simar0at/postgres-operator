@@ -1,19 +1,19 @@
 <h1 align="center">PGO: The Postgres Operator originally from Crunchy Data</h1>
 
-This is a fork of [CrunchyData's repository](https://github.com/acdh-oeaw/postgres-operator). The main purpose is to rebuild any binaries CrunchyData [distributes through their registry](https://www.crunchydata.com/developers/download-postgres/containers).
+This is a fork of [CrunchyData's repository](https://github.com/simar0at/postgres-operator). The main purpose is to rebuild any binaries CrunchyData [distributes through their registry](https://www.crunchydata.com/developers/download-postgres/containers).
 
 According to [their Terms of Use](https://www.crunchydata.com/developers/terms-of-use) the ACDH at the OeAW may not use their registry as we as an organization employ way more than 50 people.
 
 The Dockerfiles needed to be changed as the ACDH does not have access to RedHat's CodeReady Builder repository for RHEL9. The repository included with UBI9 is not enough to build the postres-gis container.
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/acdh-oeaw/postgres-operator)](https://goreportcard.com/report/github.com/acdh-oeaw/postgres-operator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/simar0at/postgres-operator)](https://goreportcard.com/report/github.com/simar0at/postgres-operator)
 ![GitHub Repo stars](https://img.shields.io/github/stars/CrunchyData/postgres-operator)
 [![License](https://img.shields.io/github/license/CrunchyData/postgres-operator)](LICENSE.md)
 [![Discord](https://img.shields.io/discord/1068276526740676708?label=discord&logo=discord)](https://discord.gg/a7vWKG8Ec9)
 
 # Production Postgres Made Easy
 
-[PGO](https://github.com/acdh-oeaw/postgres-operator), the [Postgres Operator](https://github.com/acdh-oeaw/postgres-operator) from [Crunchy Data](https://www.crunchydata.com), gives you a **declarative Postgres** solution that automatically manages your [PostgreSQL](https://www.postgresql.org) clusters.
+[PGO](https://github.com/simar0at/postgres-operator), the [Postgres Operator](https://github.com/simar0at/postgres-operator) from [Crunchy Data](https://www.crunchydata.com), gives you a **declarative Postgres** solution that automatically manages your [PostgreSQL](https://www.postgresql.org) clusters.
 
 Designed for your GitOps workflows, it is [easy to get started](https://access.crunchydata.com/documentation/postgres-operator/v6/quickstart/) with Postgres on Kubernetes with PGO. Within a few moments, you can have a production-grade Postgres cluster complete with high availability, disaster recovery, and monitoring, all over secure TLS communications. Even better, PGO lets you easily customize your Postgres cluster to tailor it to your workload!
 
@@ -25,7 +25,7 @@ Have questions or looking for help? [Join our Discord group](https://discord.gg/
 
 # Build Instructions
 
-The build process is automated in a [GitHub Action](https://github.com/acdh-oeaw/postgres-operator/blob/main/.github/workflows/build-and-push.yaml).
+The build process is automated in a [GitHub Action](https://github.com/simar0at/postgres-operator/blob/main/.github/workflows/build-and-push.yaml).
 
 This action has one prerequisite: It needs a current version of the `Rocky-9-Container-Minimal.latest.x86_64.tar.xz` container. At the moment this can not be found on docker hub.
 [Download it here](https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-Container-Minimal.latest.x86_64.tar.xz) and use the following docker commands to push it to ghcr.io:
@@ -33,14 +33,14 @@ You can not refer to the loaded container image by name at the moment.
 
 ```bash
 docker image load -i Rocky-9-Container-Minimal.latest.x86_64.tar.xz
-docker tag $(docker image ls --format json | jq -r -s 'map(select(.Repository=="rockylinux"and .Tag=="9-minimal") | .ID) | unique | .[]') ghcr.io/acdh-oeaw/postgres-operator/rockylinux:9-minimal
-docker push ghcr.io/acdh-oeaw/postgres-operator/rockylinux:9-minimal
+docker tag $(docker image ls --format json | jq -r -s 'map(select(.Repository=="rockylinux"and .Tag=="9-minimal") | .ID) | unique | .[]') ghcr.io/simar0at/postgres-operator/rockylinux:9-minimal
+docker push ghcr.io/simar0at/postgres-operator/rockylinux:9-minimal
 ```
 
 This only builds postgres 18.3 at the moment. More or different versions need to be added to the Action YAML as needed.
 At the moment this is based on EL 9.7. When the EL 9.8 based version and so on is released the image has to be updated and the build process needs to run again.
 
-To build manually the various containers required by PGO, please see the build instructions found in the [components directory](https://github.com/acdh-oeaw/postgres-operator/tree/main/components) of this repository.
+To build manually the various containers required by PGO, please see the build instructions found in the [components directory](https://github.com/simar0at/postgres-operator/tree/main/components) of this repository.
 These images are built using [packages](https://www.postgresql.org/download) developed by the PostgreSQL Global Development Group (PGDG).  
 Each subdirectory contains a `README` file describing how to build each of the various containers required by PGO.
 
@@ -167,11 +167,11 @@ Deploy PGO to watch Postgres clusters in all of your [namespaces][k8s-namespaces
 [k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
 [pgBackRest]: https://www.pgbackrest.org
 [pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/v6/tutorials/basic-setup/connection-pooling/
-[pgMonitor]: https://github.com/acdh-oeaw/pgmonitor
+[pgMonitor]: https://github.com/simar0at/pgmonitor
 
 ## Included Components
 
-[PostgreSQL containers](https://github.com/acdh-oeaw/crunchy-containers) deployed with the PostgreSQL Operator include the following components:
+[PostgreSQL containers](https://github.com/simar0at/crunchy-containers) deployed with the PostgreSQL Operator include the following components:
 
 - [PostgreSQL](https://www.postgresql.org)
   - [PostgreSQL Contrib Modules](https://www.postgresql.org/docs/current/contrib.html)
@@ -182,14 +182,14 @@ Deploy PGO to watch Postgres clusters in all of your [namespaces][k8s-namespaces
   - [pgAudit Analyze](https://github.com/pgaudit/pgaudit_analyze)
   - [pg_cron](https://github.com/citusdata/pg_cron)
   - [pg_partman](https://github.com/pgpartman/pg_partman)
-  - [pgnodemx](https://github.com/acdh-oeaw/pgnodemx)
+  - [pgnodemx](https://github.com/simar0at/pgnodemx)
   - [set_user](https://github.com/pgaudit/set_user)
   - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache-licensed community edition)
   - [wal2json](https://github.com/eulerto/wal2json)
 - [pgBackRest](https://pgbackrest.org/)
 - [pgBouncer](http://pgbouncer.github.io/)
 - [pgAdmin 4](https://www.pgadmin.org/)
-- [pgMonitor](https://github.com/acdh-oeaw/pgmonitor)
+- [pgMonitor](https://github.com/simar0at/pgmonitor)
 - [Patroni](https://patroni.readthedocs.io/)
 - [LLVM](https://llvm.org/) (for [JIT compilation](https://www.postgresql.org/docs/current/jit.html))
 
@@ -200,7 +200,7 @@ In addition to the above, the geospatially enhanced PostgreSQL + PostGIS contain
 
 [PostgreSQL Operator Monitoring](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/) uses the following components:
 
-- [pgMonitor](https://github.com/acdh-oeaw/pgmonitor)
+- [pgMonitor](https://github.com/simar0at/pgmonitor)
 - [Prometheus](https://github.com/prometheus/prometheus)
 - [Grafana](https://github.com/grafana/grafana)
 - [Alertmanager](https://github.com/prometheus/alertmanager)
