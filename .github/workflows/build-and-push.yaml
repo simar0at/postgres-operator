@@ -1,0 +1,638 @@
+# Copyright 2026 ACDH ÖAW
+# Copyright 2026 Omar Siam
+#
+# SPDX-License-Identifier: Apache-2.0
+name: Build all components and push to registry
+on:
+  push: {}
+  workflow_dispatch: {}
+jobs:
+  build_pgo_and_push_to_registry:
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Checkout pgmonitor
+        uses: actions/checkout@v6
+        with:
+          repository: simar0at/pgmonitor
+          path: pgmonitor
+          fetch-depth: 30
+          fetch-tags: true
+          ref: v5-STABLE
+          submodules: true
+      - name: Get container Git describe tag and process pgmonitor exporter common scripts
+        id: container_git_describe_tag
+        run: |
+          mkdir hack/tools/queries
+          cp -av pgmonitor/postgres_exporter/common/* hack/tools/queries/
+          rm -rf pgmonitor
+          echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pgo tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+#          flavor: |
+#            prefix=
+          images: |
+            ghcr.io/${{ github.repository }}/pgo
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push pgo
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+#          build-args: |
+#            ENV=var
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_postgres_old_and_push_to_registry:
+    env:
+      version: "16.11"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create postgres ${{ env.version }} tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-postgres
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push postgres ${{ env.version }}
+        uses: docker/build-push-action@v7
+        with:
+          context: components/image-postgres
+          file: components/image-postgres/Dockerfile.postgres
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            POSTGRES_VERSION=${{ env.version }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+    outputs:
+      version: ${{ env.version }}
+  build_postgres_and_push_to_registry:
+    env:
+      version: "18.3"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create postgres ${{ env.version }} tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-postgres
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push postgres ${{ env.version }}
+        uses: docker/build-push-action@v7
+        with:
+          context: components/image-postgres
+          file: components/image-postgres/Dockerfile.postgres
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            POSTGRES_VERSION=${{ env.version }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+    outputs:
+      version: ${{ env.version }}
+  build_postgres_gis_and_push_to_registry:
+    env:
+      version: "3.6.0"
+    needs: [build_postgres_and_push_to_registry]
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create postgis ${{ needs.build_postgres_and_push_to_registry.outputs.version }} ${{ env.version }} tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ needs.build_postgres_and_push_to_registry.outputs.version }}-${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-postgres-gis
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push postgis ${{ needs.build_postgres_and_push_to_registry.outputs.version }} ${{ env.version }}
+        uses: docker/build-push-action@v7
+        with:
+          context: components/image-postgres
+          file: components/image-postgres/Dockerfile.postgis
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            POSTGRES_VERSION=${{ needs.build_postgres_and_push_to_registry.outputs.version }}
+            POSTGIS_VERSION=${{ env.version }}
+            CPG_BASE=${{ needs.build_postgres_and_push_to_registry.outputs.version }}-${{ steps.container_git_describe_tag.outputs.ret }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_postgres_upgrade_and_push_to_registry:
+    needs: [build_postgres_and_push_to_registry]
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create postgres 18 upgrade tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ needs.build_postgres_and_push_to_registry.outputs.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-upgrade
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push postgres ${{ needs.build_postgres_and_push_to_registry.outputs.version }} upgrade
+        uses: docker/build-push-action@v7
+        with:
+          context: components/image-postgres
+          file: components/image-postgres/Dockerfile.postgres-upgrade
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            POSTGRES_UPGRADE_VERSIONS=14 15 16 17 18
+            CPG_BASE=${{ needs.build_postgres_and_push_to_registry.outputs.version }}-${{ steps.container_git_describe_tag.outputs.ret }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_pgbackrest_and_push_to_registry:
+    env:
+      version: "2.58.0"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pgbackrest tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-pgbackrest
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push pgbackrest
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: components/image-pgbackrest/Dockerfile
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            PGBACKREST_VERSION=${{ env.version }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_pgbouncer_and_push_to_registry:
+    env:
+      version: "1.25.2"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pgbouncer tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-pgbouncer
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push pgbouncer
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: components/image-pgbouncer/Dockerfile
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            PGBOUNCER_VERSION=${{ env.version }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_pgadmin4_and_push_to_registry:
+    env:
+      version: "9.13"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pgadmin4 tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-pgadmin4
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push pgadmin4
+        uses: docker/build-push-action@v7
+        with:
+          context: components/image-pgadmin
+          file: components/image-pgadmin/Dockerfile
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            PGADMIN4_VERSION=${{ env.version }}
+            PYTHON_VERSION=3.11
+            PG_MAJOR=18
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_exporter_and_push_to_registry:
+    env:
+      version: "0.18.1"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create exporter tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-postgres-exporter
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push exporter
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: components/image-exporter/Dockerfile
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            EXPORTER_VERSION=${{ env.version }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build_collector_and_push_to_registry:
+    env:
+      version: "0.147.0"
+    permissions:
+      packages: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+          fetch-tags: true
+          ref: ${{ github.ref }}
+          submodules: true
+      - name: Get container Git describe tag
+        id: container_git_describe_tag
+        run: echo "ret=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create collector tags based on git data
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          flavor: |
+            prefix=${{ env.version }}-
+          images: |
+            ghcr.io/${{ github.repository }}/crunchy-collector
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.container_git_describe_tag.outputs.ret }}
+      - name: Build and push collector
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: components/image-collector/Dockerfile
+          build-args: |
+            DOCKER_REGISTRY=ghcr.io/${{ github.repository }}
+            COLLECTOR_VERSION=${{ env.version }}
+          platforms: |
+            linux/amd64
+#            linux/arm64
+          provenance: true
+          sbom: true
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
